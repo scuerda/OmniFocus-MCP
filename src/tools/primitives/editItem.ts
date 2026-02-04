@@ -113,13 +113,10 @@ function generateAppleScript(params: EditItemParams): string {
 `;
     } else {
       script += `
-      -- Try to find project by ID
-      repeat with aProject in (flattened projects)
-        if (id of aProject as string) = "${id}" then
-          set foundItem to aProject
-          exit repeat
-        end if
-      end repeat
+      -- Try to find project by ID (using direct lookup for proper reference)
+      try
+        set foundItem to first flattened project where id = "${id}"
+      end try
 `;
     }
   }
@@ -148,13 +145,10 @@ function generateAppleScript(params: EditItemParams): string {
 `;
     } else {
       script += `
-      -- Find project by name
-      repeat with aProject in (flattened projects)
-        if (name of aProject) = "${name}" then
-          set foundItem to aProject
-          exit repeat
-        end if
-      end repeat
+      -- Find project by name (using direct lookup for proper reference)
+      try
+        set foundItem to first flattened project where name = "${name}"
+      end try
 `;
     }
   } else if (id && name) {
@@ -184,12 +178,9 @@ function generateAppleScript(params: EditItemParams): string {
       script += `
       -- If ID search failed, try to find project by name as fallback
       if foundItem is missing value then
-        repeat with aProject in (flattened projects)
-          if (name of aProject) = "${name}" then
-            set foundItem to aProject
-            exit repeat
-          end if
-        end repeat
+        try
+          set foundItem to first flattened project where name = "${name}"
+        end try
       end if
 `;
     }
