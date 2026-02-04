@@ -1,6 +1,10 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { writeFileSync, unlinkSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 import { createDateOutsideTellBlock } from '../../utils/dateFormatting.js';
+import { generateFolderPathScript, sanitizeFolderName } from '../../utils/folderPath.js';
 const execAsync = promisify(exec);
 
 // Interface for project creation parameters
@@ -28,7 +32,7 @@ function generateAppleScript(params: AddProjectParams): string {
   const flagged = params.flagged === true;
   const estimatedMinutes = params.estimatedMinutes?.toString() || '';
   const tags = params.tags || [];
-  const folderName = params.folderName?.replace(/['"\\]/g, '\\$&') || '';
+  const folderPath = params.folderName || '';
   const sequential = params.sequential === true;
   
   // Generate date constructions outside tell blocks
@@ -50,20 +54,28 @@ function generateAppleScript(params: AddProjectParams): string {
   let script = datePreScript + `
   try
     tell application "OmniFocus"
-      tell front document
-        -- Determine the container (root or folder)
-        if "${folderName}" is "" then
-          -- Create project at the root level
-          set newProject to make new project with properties {name:"${name}"}
+      tell front document`;
+
+  if (folderPath) {
+    // Folder path specified - find or create it
+    const folderPathScript = generateFolderPathScript(folderPath, 'theFolder');
+    script += `
+        -- Find or create folder path: ${sanitizeFolderName(folderPath)}
+        ${folderPathScript}
+
+        if theFolder is not missing value then
+          set newProject to make new project with properties {name:"${name}"} at end of projects of theFolder
         else
-          -- Use specified folder
-          try
-            set theFolder to first flattened folder where name = "${folderName}"
-            set newProject to make new project with properties {name:"${name}"} at end of projects of theFolder
-          on error
-            return "{\\\"success\\\":false,\\\"error\\\":\\\"Folder not found: ${folderName}\\\"}"
-          end try
-        end if
+          return "{\\\"success\\\":false,\\\"error\\\":\\\"Could not find or create folder: ${sanitizeFolderName(folderPath)}\\\"}"
+        end if`;
+  } else {
+    // No folder - create at root level
+    script += `
+        -- Create project at the root level
+        set newProject to make new project with properties {name:"${name}"}`;
+  }
+
+  script += `
         
         -- Set project properties
         ${note ? `set note of newProject to "${note}"` : ''}
@@ -114,25 +126,39 @@ function generateAppleScript(params: AddProjectParams): string {
  * Add a project to OmniFocus
  */
 export async function addProject(params: AddProjectParams): Promise<{success: boolean, projectId?: string, error?: string}> {
+  let tempFile: string | undefined;
+
   try {
     // Generate AppleScript
     const script = generateAppleScript(params);
-    
-    console.error("Executing AppleScript directly...");
-    
-    // Execute AppleScript directly
-    const { stdout, stderr } = await execAsync(`osascript -e '${script}'`);
-    
+
+    console.error("Executing AppleScript for project creation...");
+    console.error(`Project name: ${params.name}, Folder: ${params.folderName || 'root'}`);
+
+    // Write script to temporary file to avoid shell escaping issues
+    tempFile = join(tmpdir(), `add_project_${Date.now()}.applescript`);
+    writeFileSync(tempFile, script);
+
+    // Execute AppleScript from file
+    const { stdout, stderr } = await execAsync(`osascript ${tempFile}`);
+
+    // Clean up temp file
+    try {
+      unlinkSync(tempFile);
+    } catch (cleanupError) {
+      console.error("Failed to clean up temp file:", cleanupError);
+    }
+
     if (stderr) {
       console.error("AppleScript stderr:", stderr);
     }
-    
+
     console.error("AppleScript stdout:", stdout);
-    
+
     // Parse the result
     try {
       const result = JSON.parse(stdout);
-      
+
       // Return the result
       return {
         success: result.success,
@@ -147,6 +173,15 @@ export async function addProject(params: AddProjectParams): Promise<{success: bo
       };
     }
   } catch (error: any) {
+    // Clean up temp file if it exists
+    if (tempFile) {
+      try {
+        unlinkSync(tempFile);
+      } catch (cleanupError) {
+        // Ignore cleanup errors
+      }
+    }
+
     console.error("Error in addProject:", error);
     return {
       success: false,

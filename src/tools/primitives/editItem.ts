@@ -4,6 +4,7 @@ import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { generateDateAssignmentV2 } from '../../utils/dateFormatting.js';
+import { generateFolderPathScript, sanitizeFolderName } from '../../utils/folderPath.js';
 const execAsync = promisify(exec);
 
 // Status options for tasks and projects
@@ -372,24 +373,18 @@ function generateAppleScript(params: EditItemParams): string {
 `;
     }
     
-    // Move to a new folder
+    // Move to a new folder (supports path syntax with " : " delimiter)
     if (params.newFolderName !== undefined) {
-      const folderName = params.newFolderName.replace(/['"\\]/g, '\\$&');
+      const folderPathScript = generateFolderPathScript(params.newFolderName, 'destFolder');
       script += `
-        -- Move to new folder
-        set destFolder to missing value
-        try
-          set destFolder to first flattened folder where name = "${folderName}"
-        end try
-        
-        if destFolder is missing value then
-          -- Create the folder if it doesn't exist
-          set destFolder to make new folder with properties {name:"${folderName}"}
+        -- Move to new folder (path: ${sanitizeFolderName(params.newFolderName)})
+        ${folderPathScript}
+
+        if destFolder is not missing value then
+          -- Move project to the folder
+          move foundItem to end of projects of destFolder
+          set end of changedProperties to "folder"
         end if
-        
-        -- Move project to the folder
-        move foundItem to end of projects of destFolder
-        set end of changedProperties to "folder"
 `;
     }
   }

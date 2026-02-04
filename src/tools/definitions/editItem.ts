@@ -23,7 +23,7 @@ export const schema = z.object({
   
   // Project-specific fields
   newSequential: z.boolean().optional().describe("Whether the project should be sequential"),
-  newFolderName: z.string().optional().describe("New folder to move the project to"),
+  newFolderName: z.string().optional().describe("New folder or folder path to move the project to (e.g., '01 Projects' or '01 Projects : Home Renovations'). Uses ' : ' as path delimiter. Missing folders in the path will be auto-created."),
   newProjectStatus: z.enum(['active', 'completed', 'dropped', 'onHold']).optional().describe("New status for projects")
 });
 
