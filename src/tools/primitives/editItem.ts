@@ -388,7 +388,7 @@ function generateAppleScript(params: EditItemParams): string {
         end if
         
         -- Move project to the folder
-        move foundItem to destFolder
+        move foundItem to end of projects of destFolder
         set end of changedProperties to "folder"
 `;
     }
