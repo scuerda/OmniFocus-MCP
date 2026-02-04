@@ -8,6 +8,7 @@ import * as dumpDatabaseTool from './tools/definitions/dumpDatabase.js';
 import * as addOmniFocusTaskTool from './tools/definitions/addOmniFocusTask.js';
 import * as addProjectTool from './tools/definitions/addProject.js';
 import * as addFolderTool from './tools/definitions/addFolder.js';
+import * as removeFolderTool from './tools/definitions/removeFolder.js';
 import * as removeItemTool from './tools/definitions/removeItem.js';
 import * as editItemTool from './tools/definitions/editItem.js';
 import * as batchAddItemsTool from './tools/definitions/batchAddItems.js';
@@ -49,6 +50,13 @@ server.tool(
   "Add a new folder to OmniFocus for organizing projects. Supports nested folder paths with ' : ' delimiter (e.g., '01 Projects : Home Renovations').",
   addFolderTool.schema.shape,
   addFolderTool.handler
+);
+
+server.tool(
+  "remove_folder",
+  "Remove a folder from OmniFocus. By default, fails if folder contains projects or subfolders. Set removeContents to true to delete folder and all its contents.",
+  removeFolderTool.schema.shape,
+  removeFolderTool.handler
 );
 
 server.tool(

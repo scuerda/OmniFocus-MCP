@@ -23,7 +23,7 @@ Some ways you could use it:
 - Benefit from MCP `resource` and `prompt` features
 - Add support for the new `planned` date type in Omnifocus 4.7
 - Support manipulating notifications for projects and tasks
-- Add `remove_folder` tool for deleting folders (currently only `add_folder` exists)
+- ~~Add `remove_folder` tool for deleting folders~~ ✅ (Added remove_folder)
 
 
 ## 🚀 Quick Start
