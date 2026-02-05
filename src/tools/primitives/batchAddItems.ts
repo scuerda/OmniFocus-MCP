@@ -20,6 +20,8 @@ export type BatchAddItemsParams = {
   hierarchyLevel?: number;
   folderName?: string; // For projects
   sequential?: boolean; // For projects
+  repetitionRule?: string; // For projects: iCalendar RRULE string
+  repetitionMethod?: 'fixed' | 'start-after-completion' | 'due-after-completion'; // For projects
 };
 
 // Define the result type for individual operations
@@ -126,7 +128,9 @@ export async function batchAddItems(items: BatchAddItemsParams[]): Promise<Batch
               estimatedMinutes: item.estimatedMinutes,
               tags: item.tags,
               folderName: item.folderName,
-              sequential: item.sequential
+              sequential: item.sequential,
+              repetitionRule: item.repetitionRule,
+              repetitionMethod: item.repetitionMethod
             };
 
             const projectResult = await addProject(projectParams);

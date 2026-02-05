@@ -18,6 +18,8 @@ export interface AddProjectParams {
   tags?: string[]; // Tag names
   folderName?: string; // Folder name to add project to
   sequential?: boolean; // Whether tasks should be sequential or parallel
+  repetitionRule?: string; // iCalendar RRULE string (e.g., "FREQ=WEEKLY;INTERVAL=1")
+  repetitionMethod?: 'fixed' | 'start-after-completion' | 'due-after-completion'; // How next occurrence is calculated
 }
 
 /**
@@ -34,6 +36,16 @@ function generateAppleScript(params: AddProjectParams): string {
   const tags = params.tags || [];
   const folderPath = params.folderName || '';
   const sequential = params.sequential === true;
+  const repetitionRule = params.repetitionRule || '';
+  const repetitionMethod = params.repetitionMethod || 'fixed';
+
+  // Map repetition method to AppleScript value
+  const repetitionMethodMap: Record<string, string> = {
+    'fixed': 'fixed repetition',
+    'start-after-completion': 'start after completion',
+    'due-after-completion': 'due after completion'
+  };
+  const repetitionMethodValue = repetitionMethodMap[repetitionMethod] || 'fixed repetition';
   
   // Generate date constructions outside tell blocks
   let datePreScript = '';
@@ -88,7 +100,10 @@ function generateAppleScript(params: AddProjectParams): string {
         ${flagged ? `set flagged of newProject to true` : ''}
         ${estimatedMinutes ? `set estimated minutes of newProject to ${estimatedMinutes}` : ''}
         ${`set sequential of newProject to ${sequential}`}
-        
+        ${repetitionRule ? `
+        -- Set repetition rule
+        set repetition rule of newProject to {recurrence:"${repetitionRule}", repetition method:${repetitionMethodValue}}` : ''}
+
         -- Get the project ID
         set projectId to id of newProject as string
         

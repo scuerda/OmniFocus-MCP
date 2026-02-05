@@ -24,7 +24,9 @@ export const schema = z.object({
   // Project-specific fields
   newSequential: z.boolean().optional().describe("Whether the project should be sequential"),
   newFolderName: z.string().optional().describe("New folder or folder path to move the project to (e.g., '01 Projects' or '01 Projects : Home Renovations'). Uses ' : ' as path delimiter. Missing folders in the path will be auto-created."),
-  newProjectStatus: z.enum(['active', 'completed', 'dropped', 'onHold']).optional().describe("New status for projects")
+  newProjectStatus: z.enum(['active', 'completed', 'dropped', 'onHold']).optional().describe("New status for projects"),
+  newRepetitionRule: z.string().optional().describe("iCalendar RRULE string for repeating projects (e.g., 'FREQ=WEEKLY;INTERVAL=1', 'FREQ=MONTHLY;BYMONTHDAY=15'). Set to empty string to clear repetition."),
+  newRepetitionMethod: z.enum(['fixed', 'start-after-completion', 'due-after-completion']).optional().describe("How the next occurrence is calculated: 'fixed' repeats from original due date, 'start-after-completion' creates next instance after completion, 'due-after-completion' sets due date based on completion")
 });
 
 export async function handler(args: z.infer<typeof schema>, extra: RequestHandlerExtra) {

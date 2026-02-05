@@ -11,7 +11,9 @@ export const schema = z.object({
   estimatedMinutes: z.number().optional().describe("Estimated time to complete the project, in minutes"),
   tags: z.array(z.string()).optional().describe("Tags to assign to the project"),
   folderName: z.string().optional().describe("The folder name or path to add the project to (e.g., '01 Projects' or '01 Projects : Home Renovations'). Uses ' : ' as path delimiter. Missing folders in the path will be auto-created. Omit to create at root level."),
-  sequential: z.boolean().optional().describe("Whether tasks in the project should be sequential (default: false)")
+  sequential: z.boolean().optional().describe("Whether tasks in the project should be sequential (default: false)"),
+  repetitionRule: z.string().optional().describe("iCalendar RRULE string for repeating projects (e.g., 'FREQ=WEEKLY;INTERVAL=1', 'FREQ=MONTHLY;BYMONTHDAY=15', 'FREQ=WEEKLY;BYDAY=MO,WE,FR')"),
+  repetitionMethod: z.enum(['fixed', 'start-after-completion', 'due-after-completion']).optional().describe("How the next occurrence is calculated: 'fixed' repeats from original due date, 'start-after-completion' creates next instance after completion, 'due-after-completion' sets due date based on completion")
 });
 
 export async function handler(args: z.infer<typeof schema>, extra: RequestHandlerExtra) {
@@ -36,11 +38,15 @@ export async function handler(args: z.infer<typeof schema>, extra: RequestHandle
       let sequentialText = args.sequential
         ? " (sequential)"
         : " (parallel)";
-        
+
+      let repetitionText = args.repetitionRule
+        ? `, repeating: ${args.repetitionRule} (${args.repetitionMethod || 'fixed'})`
+        : "";
+
       return {
         content: [{
           type: "text" as const,
-          text: `✅ Project "${args.name}" created successfully ${locationText}${dueDateText}${tagText}${sequentialText}.`
+          text: `✅ Project "${args.name}" created successfully ${locationText}${dueDateText}${tagText}${sequentialText}${repetitionText}.`
         }]
       };
     } else {

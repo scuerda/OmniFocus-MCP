@@ -35,6 +35,8 @@ export interface EditItemParams {
   newSequential?: boolean;      // Whether the project should be sequential
   newFolderName?: string;       // New folder to move the project to
   newProjectStatus?: ProjectStatus; // New status for projects
+  newRepetitionRule?: string;   // iCalendar RRULE string (empty string to clear)
+  newRepetitionMethod?: 'fixed' | 'start-after-completion' | 'due-after-completion'; // How next occurrence is calculated
 }
 
 /**
@@ -377,6 +379,31 @@ function generateAppleScript(params: EditItemParams): string {
           set end of changedProperties to "folder"
         end if
 `;
+    }
+
+    // Update repetition rule
+    if (params.newRepetitionRule !== undefined) {
+      if (params.newRepetitionRule === '') {
+        // Clear the repetition rule
+        script += `
+        -- Clear repetition rule
+        set repetition rule of foundItem to missing value
+        set end of changedProperties to "repetition rule (cleared)"
+`;
+      } else {
+        const repetitionMethodMap: Record<string, string> = {
+          'fixed': 'fixed repetition',
+          'start-after-completion': 'start after completion',
+          'due-after-completion': 'due after completion'
+        };
+        const methodValue = repetitionMethodMap[params.newRepetitionMethod || 'fixed'] || 'fixed repetition';
+        const sanitizedRule = params.newRepetitionRule.replace(/['"\\]/g, '\\$&');
+        script += `
+        -- Set repetition rule
+        set repetition rule of foundItem to {recurrence:"${sanitizedRule}", repetition method:${methodValue}}
+        set end of changedProperties to "repetition rule"
+`;
+      }
     }
   }
   

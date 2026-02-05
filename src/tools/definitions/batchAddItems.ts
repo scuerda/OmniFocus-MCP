@@ -23,7 +23,9 @@ export const schema = z.object({
     
     // Project-specific properties
     folderName: z.string().optional().describe("For projects: The name of the folder to add the project to"),
-    sequential: z.boolean().optional().describe("For projects: Whether tasks in the project should be sequential")
+    sequential: z.boolean().optional().describe("For projects: Whether tasks in the project should be sequential"),
+    repetitionRule: z.string().optional().describe("For projects: iCalendar RRULE string for repeating projects (e.g., 'FREQ=WEEKLY;INTERVAL=1', 'FREQ=MONTHLY;BYMONTHDAY=15')"),
+    repetitionMethod: z.enum(['fixed', 'start-after-completion', 'due-after-completion']).optional().describe("For projects: How the next occurrence is calculated")
   })).describe("Array of items (tasks or projects) to add")
   ,
   createSequentially: z.boolean().optional().describe("Process parents before children; when false, best-effort order will still try to resolve parents first")
